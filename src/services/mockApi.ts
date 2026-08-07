@@ -50,7 +50,7 @@ function quoteFrom(answer: CandidateAnswer | undefined, fallback: string): strin
 
 interface QuestionTemplate {
   topic: string;
-  build: (ctx: { role: string; focus?: string }) => string;
+  build: (ctx: { role: string; focus?: string | undefined }) => string;
 }
 
 const OPENER: QuestionTemplate = {
@@ -272,8 +272,12 @@ export async function getNextQuestion(
   const focus = keywords(answers.at(-1)?.text ?? "", 1)[0];
   const track = trackFor(role);
 
-  const template =
-    index === 1 ? OPENER : index === TOTAL_QUESTIONS ? CLOSER : track[(index - 2) % track.length];
+  const template: QuestionTemplate =
+    index === 1
+      ? OPENER
+      : index === TOTAL_QUESTIONS
+        ? CLOSER
+        : (track[(index - 2) % track.length] ?? GENERIC_TRACK[0]!);
 
   return {
     id: uid(),
