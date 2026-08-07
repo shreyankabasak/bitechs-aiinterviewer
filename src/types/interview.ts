@@ -9,13 +9,7 @@ export type Role =
 
 /** The six question categories a session is assembled from (core technical appears twice). */
 export type QuestionCategory =
-  | "warmup"
-  | "core-a"
-  | "core-b"
-  | "scenario"
-  | "behavioral"
-  | "tradeoff"
-  | "closing";
+  "warmup" | "core-a" | "core-b" | "scenario" | "behavioral" | "tradeoff" | "closing";
 
 export interface InterviewTurn {
   id: string;
@@ -41,8 +35,7 @@ export interface CandidateAnswer {
 }
 
 export type ChatMessage =
-  | { kind: "question"; turn: InterviewTurn }
-  | { kind: "answer"; answer: CandidateAnswer };
+  { kind: "question"; turn: InterviewTurn } | { kind: "answer"; answer: CandidateAnswer };
 
 export interface FeedbackPoint {
   title: string;

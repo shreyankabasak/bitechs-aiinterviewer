@@ -21,7 +21,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 
 const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-const pick = <T,>(items: T[]): T => items[Math.floor(Math.random() * items.length)]!;
+const pick = <T>(items: T[]): T => items[Math.floor(Math.random() * items.length)]!;
 
 const STOP_WORDS = new Set([
   "the",
@@ -302,7 +302,7 @@ const GENERIC_POOL: RolePool = {
       id: "g-s3",
       topic: "Scenario",
       build: () =>
-        "A dependency you rely on is late and the owner keeps saying \"almost done\". How do you handle it?",
+        'A dependency you rely on is late and the owner keeps saying "almost done". How do you handle it?',
     },
   ],
   behavioral: [
@@ -566,8 +566,7 @@ const ROLE_POOLS: Record<string, RolePool> = {
       {
         id: "be-t2",
         topic: "Trade-offs",
-        build: () =>
-          "When is a monolith the right answer in 2026? Argue it properly.",
+        build: () => "When is a monolith the right answer in 2026? Argue it properly.",
       },
       {
         id: "be-t3",
@@ -687,8 +686,7 @@ const ROLE_POOLS: Record<string, RolePool> = {
       {
         id: "pm-t3",
         topic: "Judgment",
-        build: () =>
-          "When do you kill a feature that a small but loud group of users love?",
+        build: () => "When do you kill a feature that a small but loud group of users love?",
       },
     ],
   },
@@ -717,7 +715,7 @@ const ROLE_POOLS: Record<string, RolePool> = {
         id: "da-a4",
         topic: "Metric definition",
         build: () =>
-          "Two teams report different values for \"active users\". How do you resolve that, and what do you ship so it doesn't recur?",
+          'Two teams report different values for "active users". How do you resolve that, and what do you ship so it doesn\'t recur?',
       },
     ],
     "core-b": [
@@ -757,7 +755,7 @@ const ROLE_POOLS: Record<string, RolePool> = {
         id: "da-s2",
         topic: "Scenario",
         build: () =>
-          "Three teams ask you for \"quick pulls\" the same morning and all of them are blocked. How do you triage?",
+          'Three teams ask you for "quick pulls" the same morning and all of them are blocked. How do you triage?',
       },
       {
         id: "da-s3",
@@ -851,8 +849,7 @@ const ROLE_POOLS: Record<string, RolePool> = {
       {
         id: "mk-b3",
         topic: "Funnel",
-        build: () =>
-          "Traffic is up 60% and signups are flat. What's your diagnostic order?",
+        build: () => "Traffic is up 60% and signups are flat. What's your diagnostic order?",
       },
       {
         id: "mk-b4",
@@ -917,8 +914,7 @@ const ROLE_POOLS: Record<string, RolePool> = {
       {
         id: "mk-t3",
         topic: "Judgment",
-        build: () =>
-          "When do you cut a channel that's working but not scaling?",
+        build: () => "When do you cut a channel that's working but not scaling?",
       },
     ],
   },
@@ -946,8 +942,7 @@ const ROLE_POOLS: Record<string, RolePool> = {
       {
         id: "sl-a4",
         topic: "Value framing",
-        build: () =>
-          "How do you build a business case a CFO will sign without inventing numbers?",
+        build: () => "How do you build a business case a CFO will sign without inventing numbers?",
       },
     ],
     "core-b": [
@@ -967,7 +962,7 @@ const ROLE_POOLS: Record<string, RolePool> = {
         id: "sl-b3",
         topic: "Objections",
         build: () =>
-          "\"We're going to build this internally.\" What do you say next, and what are you probing for?",
+          '"We\'re going to build this internally." What do you say next, and what are you probing for?',
       },
       {
         id: "sl-b4",
@@ -1026,8 +1021,7 @@ const ROLE_POOLS: Record<string, RolePool> = {
       {
         id: "sl-t2",
         topic: "Trade-offs",
-        build: () =>
-          "When do you walk away from a deal that's still technically alive?",
+        build: () => "When do you walk away from a deal that's still technically alive?",
       },
       {
         id: "sl-t3",
@@ -1184,7 +1178,8 @@ function scoreAnswer(answer: CandidateAnswer, turn: InterviewTurn | undefined): 
   }
 
   const depth = Math.min(4, answer.wordCount / 45);
-  const specificity = (/\d/.test(answer.text) ? 1.5 : 0) + (SUBSTANCE_PATTERNS.test(answer.text) ? 1.5 : 0);
+  const specificity =
+    (/\d/.test(answer.text) ? 1.5 : 0) + (SUBSTANCE_PATTERNS.test(answer.text) ? 1.5 : 0);
 
   const questionWords = new Set(keywords(turn?.question ?? "", 6));
   const overlap = keywords(answer.text, 8).filter((w) => questionWords.has(w)).length;
@@ -1205,7 +1200,8 @@ export async function getFeedback(
   const substantive = scored.filter(isSubstantive);
 
   const turnOf = (a: CandidateAnswer) => turns.find((t) => t.id === a.turnId);
-  const topicOf = (a?: CandidateAnswer) => (a ? (turnOf(a)?.topic ?? "the interview") : "the interview");
+  const topicOf = (a?: CandidateAnswer) =>
+    a ? (turnOf(a)?.topic ?? "the interview") : "the interview";
 
   const perAnswer = scored.map((a) => scoreAnswer(a, turnOf(a)));
   const average = perAnswer.reduce((sum, s) => sum + s, 0) / Math.max(perAnswer.length, 1);

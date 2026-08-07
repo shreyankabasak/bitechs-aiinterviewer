@@ -70,7 +70,6 @@ export function FeedbackReport({
         </div>
       </section>
 
-
       <section className="mt-8">
         <h2 className="flex items-center gap-2 text-sm font-medium">
           <Target className="h-4 w-4 text-muted-foreground" />
