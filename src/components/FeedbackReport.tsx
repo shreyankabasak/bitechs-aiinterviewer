@@ -57,9 +57,16 @@ export function FeedbackReport({
           Strengths
         </h2>
         <div className="mt-3 space-y-3">
-          {feedback.strengths.map((p) => (
-            <PointCard key={p.title} point={p} tone="good" />
-          ))}
+          {feedback.strengths.length > 0 ? (
+            feedback.strengths.map((p) => <PointCard key={p.title} point={p} tone="good" />)
+          ) : (
+            <div className="rounded-xl border border-dashed border-border bg-card/50 p-4">
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {feedback.strengthsNote ??
+                  "Not enough substantive answers this round to identify clear strengths."}
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

@@ -1,16 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RoleSelector } from "@/components/RoleSelector";
 import { InterviewChat } from "@/components/InterviewChat";
 import { FeedbackReport } from "@/components/FeedbackReport";
-import { getFeedback, getNextQuestion } from "@/services/mockApi";
+import {
+  classifyResponse,
+  createSessionPlan,
+  getFeedback,
+  getNextQuestion,
+  getRephrasedQuestion,
+  type SessionPlan,
+} from "@/services/mockApi";
 import type {
   CandidateAnswer,
   ChatMessage,
   FeedbackSummary,
   InterviewTurn,
 } from "@/types/interview";
-import { TOTAL_QUESTIONS } from "@/types/interview";
+import { MAX_REPHRASES_PER_QUESTION, TOTAL_QUESTIONS } from "@/types/interview";
 
 const title = "Interview Agent — AI Technical Screener";
 const description =
@@ -35,54 +42,89 @@ type Stage = "select" | "interview" | "feedback";
 function Index() {
   const [stage, setStage] = useState<Stage>("select");
   const [role, setRole] = useState("");
+  const [plan, setPlan] = useState<SessionPlan | null>(null);
   const [turns, setTurns] = useState<InterviewTurn[]>([]);
   const [answers, setAnswers] = useState<CandidateAnswer[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackSummary | null>(null);
 
-  const askNext = useCallback(async (forRole: string, history: CandidateAnswer[]) => {
-    setIsThinking(true);
-    const turn = await getNextQuestion(forRole, history);
-    setTurns((prev) => [...prev, turn]);
-    setMessages((prev) => [...prev, { kind: "question", turn }]);
-    setIsThinking(false);
-  }, []);
+  /** How many times the current question slot has been rephrased. */
+  const rephrasesForSlot = useRef(0);
+
+  const askNext = useCallback(
+    async (forRole: string, history: CandidateAnswer[], forPlan: SessionPlan) => {
+      setIsThinking(true);
+      const turn = await getNextQuestion(forRole, history, forPlan);
+      rephrasesForSlot.current = 0;
+      setTurns((prev) => [...prev, turn]);
+      setMessages((prev) => [...prev, { kind: "question", turn }]);
+      setIsThinking(false);
+    },
+    [],
+  );
 
   const start = (nextRole: string) => {
+    const nextPlan = createSessionPlan(nextRole);
     setRole(nextRole);
+    setPlan(nextPlan);
     setTurns([]);
     setAnswers([]);
     setMessages([]);
     setFeedback(null);
+    rephrasesForSlot.current = 0;
     setStage("interview");
-    void askNext(nextRole, []);
+    void askNext(nextRole, [], nextPlan);
   };
 
   const submitAnswer = (text: string) => {
     const currentTurn = turns.at(-1);
-    if (!currentTurn) return;
+    if (!currentTurn || !plan) return;
 
-    const answer: CandidateAnswer = {
+    let kind = classifyResponse(text);
+
+    // After the allowed rephrases, whatever comes next is scored for this slot
+    // so the interview can never stall.
+    if (kind === "clarification" && rephrasesForSlot.current >= MAX_REPHRASES_PER_QUESTION) {
+      kind = "non-answer";
+    }
+
+    const response: CandidateAnswer = {
       id: Math.random().toString(36).slice(2, 10),
       turnId: currentTurn.id,
       text,
       wordCount: text.trim().split(/\s+/).filter(Boolean).length,
       answeredAt: Date.now(),
+      kind,
     };
 
-    const history = [...answers, answer];
+    setMessages((prev) => [...prev, { kind: "answer", answer: response }]);
+
+    // Clarification: not scored, counter does not advance — just restate it.
+    if (kind === "clarification") {
+      const attempt = rephrasesForSlot.current + 1;
+      rephrasesForSlot.current = attempt;
+      setIsThinking(true);
+      void (async () => {
+        const turn = await getRephrasedQuestion(currentTurn, attempt);
+        setTurns((prev) => [...prev, turn]);
+        setMessages((prev) => [...prev, { kind: "question", turn }]);
+        setIsThinking(false);
+      })();
+      return;
+    }
+
+    const history = [...answers, response];
     setAnswers(history);
-    setMessages((prev) => [...prev, { kind: "answer", answer }]);
 
     if (history.length >= TOTAL_QUESTIONS) {
       setIsThinking(true);
       return;
     }
-    void askNext(role, history);
+    void askNext(role, history, plan);
   };
 
-  // Once all 7 answers are in, compile the report.
+  // Once all 7 scored answers are in, compile the report.
   useEffect(() => {
     if (stage !== "interview" || answers.length < TOTAL_QUESTIONS) return;
     let cancelled = false;
@@ -107,7 +149,7 @@ function Index() {
     <InterviewChat
       role={role}
       messages={messages}
-      questionNumber={Math.max(turns.length, 1)}
+      questionNumber={Math.max(answers.length + 1, 1)}
       isThinking={isThinking}
       onSubmitAnswer={submitAnswer}
     />
