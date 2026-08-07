@@ -46,8 +46,8 @@ export function RoleSelector({ onStart }: { onStart: (role: string) => void }) {
           <span className="text-muted-foreground">One honest readout.</span>
         </p>
         <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-          A live mock screen that adapts to what you say, then scores your readiness with
-          specific strengths and gaps — quoted from your own answers.
+          A live mock screen that adapts to what you say, then scores your readiness with specific
+          strengths and gaps — quoted from your own answers.
         </p>
 
         <div className="mt-10 rounded-2xl border border-border bg-card/60 p-5 backdrop-blur">

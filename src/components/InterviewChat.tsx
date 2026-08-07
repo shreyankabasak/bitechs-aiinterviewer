@@ -85,10 +85,7 @@ export function InterviewChat({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const wordCount = useMemo(
-    () => draft.trim().split(/\s+/).filter(Boolean).length,
-    [draft],
-  );
+  const wordCount = useMemo(() => draft.trim().split(/\s+/).filter(Boolean).length, [draft]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });

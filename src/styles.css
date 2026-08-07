@@ -63,7 +63,9 @@
   --color-void: var(--void);
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
-  --shadow-glow: 0 0 0 1px color-mix(in oklab, var(--accent) 12%, transparent), 0 18px 60px -24px color-mix(in oklab, var(--accent) 45%, transparent);
+  --shadow-glow:
+    0 0 0 1px color-mix(in oklab, var(--accent) 12%, transparent),
+    0 18px 60px -24px color-mix(in oklab, var(--accent) 45%, transparent);
 }
 
 :root {

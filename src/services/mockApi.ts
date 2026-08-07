@@ -20,7 +20,63 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 const STOP_WORDS = new Set([
-  "the","and","that","with","this","from","have","would","there","which","about","been","were","they","because","just","really","when","what","some","into","then","also","them","than","your","only","very","much","more","like","make","made","using","used","able","after","before","could","should","while","where","being","over","most","many","such","things","thing","stuff","kind","sort","lot","time","team","work","working",
+  "the",
+  "and",
+  "that",
+  "with",
+  "this",
+  "from",
+  "have",
+  "would",
+  "there",
+  "which",
+  "about",
+  "been",
+  "were",
+  "they",
+  "because",
+  "just",
+  "really",
+  "when",
+  "what",
+  "some",
+  "into",
+  "then",
+  "also",
+  "them",
+  "than",
+  "your",
+  "only",
+  "very",
+  "much",
+  "more",
+  "like",
+  "make",
+  "made",
+  "using",
+  "used",
+  "able",
+  "after",
+  "before",
+  "could",
+  "should",
+  "while",
+  "where",
+  "being",
+  "over",
+  "most",
+  "many",
+  "such",
+  "things",
+  "thing",
+  "stuff",
+  "kind",
+  "sort",
+  "lot",
+  "time",
+  "team",
+  "work",
+  "working",
 ]);
 
 function keywords(text: string, limit = 3): string[] {
@@ -106,7 +162,7 @@ const ROLE_TRACKS: Record<string, QuestionTemplate[]> = {
     {
       topic: "Reliability",
       build: () =>
-        "Walk me through how you'd make this idempotent:\n\n```http\nPOST /v1/payments\n{ \"amount\": 4200, \"currency\": \"usd\", \"customer\": \"cus_123\" }\n```\n\nWhat happens when the client retries after a network timeout?",
+        'Walk me through how you\'d make this idempotent:\n\n```http\nPOST /v1/payments\n{ "amount": 4200, "currency": "usd", "customer": "cus_123" }\n```\n\nWhat happens when the client retries after a network timeout?',
     },
     {
       topic: "Ownership",
@@ -187,7 +243,7 @@ const ROLE_TRACKS: Record<string, QuestionTemplate[]> = {
     {
       topic: "Craft",
       build: () =>
-        "Rewrite this headline out loud for me and explain your edit: *\"We help teams do more with less using AI-powered workflow automation.\"*",
+        'Rewrite this headline out loud for me and explain your edit: *"We help teams do more with less using AI-powered workflow automation."*',
     },
     {
       topic: "Learning",
@@ -209,7 +265,7 @@ const ROLE_TRACKS: Record<string, QuestionTemplate[]> = {
     {
       topic: "Objections",
       build: () =>
-        '"Your product is 40% more expensive than the alternative we\'re evaluating." Give me your actual response — words you\'d say, not a framework name.',
+        "\"Your product is 40% more expensive than the alternative we're evaluating.\" Give me your actual response — words you'd say, not a framework name.",
     },
     {
       topic: "Pipeline",
@@ -306,10 +362,7 @@ export async function getFeedback(
   const depth = Math.min(3, avgWords / 45);
   const evidence = Math.min(2.5, (specificity / Math.max(answers.length, 1)) * 2.5);
   const range = Math.min(1.5, topics.length * 0.5);
-  const score = Math.max(
-    3,
-    Math.min(10, Math.round((4 + depth + evidence + range) * 10) / 10),
-  );
+  const score = Math.max(3, Math.min(10, Math.round((4 + depth + evidence + range) * 10) / 10));
 
   const topicOf = (a?: CandidateAnswer) =>
     turns.find((t) => t.id === a?.turnId)?.topic ?? "the interview";

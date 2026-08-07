@@ -41,16 +41,13 @@ function Index() {
   const [isThinking, setIsThinking] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackSummary | null>(null);
 
-  const askNext = useCallback(
-    async (forRole: string, history: CandidateAnswer[]) => {
-      setIsThinking(true);
-      const turn = await getNextQuestion(forRole, history);
-      setTurns((prev) => [...prev, turn]);
-      setMessages((prev) => [...prev, { kind: "question", turn }]);
-      setIsThinking(false);
-    },
-    [],
-  );
+  const askNext = useCallback(async (forRole: string, history: CandidateAnswer[]) => {
+    setIsThinking(true);
+    const turn = await getNextQuestion(forRole, history);
+    setTurns((prev) => [...prev, turn]);
+    setMessages((prev) => [...prev, { kind: "question", turn }]);
+    setIsThinking(false);
+  }, []);
 
   const start = (nextRole: string) => {
     setRole(nextRole);

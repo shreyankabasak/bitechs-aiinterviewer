@@ -80,8 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Interview Agent — AI Technical Screener" },
       {
         name: "description",
-        content:
-          "Adaptive AI mock interviews with a scored readiness report.",
+        content: "Adaptive AI mock interviews with a scored readiness report.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
