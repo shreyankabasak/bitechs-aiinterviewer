@@ -9,9 +9,12 @@ set, every function falls back to a deterministic mock.
 
 import os
 import json
+import sys
+import traceback
 
 MODEL = os.environ.get("LLM_MODEL", "gemini-2.5-flash")
 _USE_MOCK = not os.environ.get("GEMINI_API_KEY")
+LAST_ERROR = None   # exposed via /health so we can see failures without digging through logs
 
 if not _USE_MOCK:
     from google import genai
@@ -20,15 +23,27 @@ if not _USE_MOCK:
 
 
 def _call(system: str, user: str, max_tokens: int = 500) -> str:
+    global LAST_ERROR
     if _USE_MOCK:
         return _mock_response(user)
-    full_prompt = f"{system}\n\n{user}"
-    resp = _client.models.generate_content(
-        model=MODEL,
-        contents=full_prompt,
-        config=types.GenerateContentConfig(max_output_tokens=max_tokens),
-    )
-    return resp.text
+    try:
+        full_prompt = f"{system}\n\n{user}"
+        resp = _client.models.generate_content(
+            model=MODEL,
+            contents=full_prompt,
+            config=types.GenerateContentConfig(max_output_tokens=max_tokens),
+        )
+        if not resp.text:
+            raise ValueError(f"Empty response from Gemini (finish_reason may indicate why): {resp}")
+        return resp.text
+    except Exception as e:
+        # NEVER let a live demo hard-crash because of an API hiccup -
+        # log the real error (visible in Render logs + /health) and
+        # fall back to mock text so the interview keeps running.
+        LAST_ERROR = f"{type(e).__name__}: {e}"
+        print(f"[llm.py] Gemini call failed, falling back to mock: {LAST_ERROR}", file=sys.stderr)
+        traceback.print_exc()
+        return _mock_response(user)
 
 
 def _mock_response(user: str) -> str:

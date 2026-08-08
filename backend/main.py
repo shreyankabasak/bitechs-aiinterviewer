@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from models import InterviewRequest, InterviewResponse
 from planner import build_plan, synthesize_candidate_from_role
@@ -210,4 +211,13 @@ def interview(req: InterviewRequest):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "mock_mode": llm._USE_MOCK, "model": llm.MODEL}
+    return {"status": "ok", "mock_mode": llm._USE_MOCK, "model": llm.MODEL,
+             "last_llm_error": llm.LAST_ERROR}
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request, exc):
+    import traceback
+    tb = traceback.format_exc()
+    print(f"[main.py] Unhandled exception on {request.url.path}:\n{tb}")
+    return JSONResponse(status_code=500, content={"detail": f"{type(exc).__name__}: {exc}"})
