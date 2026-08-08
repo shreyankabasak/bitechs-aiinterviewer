@@ -1128,6 +1128,55 @@ export async function getNextQuestion(
   };
 }
 
+/**
+ * Swap the question occupying a slot for a different one from the same
+ * category pool. Used by the "skip / regenerate" control when a question
+ * doesn't apply to the candidate's background. The slot index (and therefore
+ * the "Question X of 7" counter) is unchanged; scoring rules are untouched.
+ */
+export async function regenerateQuestion(
+  role: string,
+  answers: CandidateAnswer[],
+  plan: SessionPlan,
+  currentTurn: InterviewTurn,
+): Promise<{ turn: InterviewTurn; plan: SessionPlan }> {
+  await delay(700 + Math.random() * 500);
+
+  const slot = Math.min(Math.max(currentTurn.index, 1), plan.templates.length) - 1;
+  const category = CATEGORY_ORDER[slot]!;
+  const options =
+    category === "warmup"
+      ? WARMUP_POOL
+      : category === "closing"
+        ? CLOSING_POOL
+        : poolFor(role)[category as CoreCategory];
+
+  const current = plan.templates[slot];
+  const alternatives = options.filter((t) => t.id !== current?.id);
+  const template = alternatives.length > 0 ? pick(alternatives) : (current ?? pick(options));
+
+  const templates = [...plan.templates];
+  templates[slot] = template;
+  const nextPlan: SessionPlan = {
+    ...plan,
+    templates,
+    signature: templates.map((t) => t.id).join("|"),
+  };
+
+  const focus = keywords(answers.at(-1)?.text ?? "", 1)[0];
+
+  return {
+    plan: nextPlan,
+    turn: {
+      id: uid(),
+      index: currentTurn.index,
+      topic: template.topic,
+      question: template.build({ role, focus }),
+      askedAt: Date.now(),
+    },
+  };
+}
+
 /** Strip markdown/code so a question can be restated plainly. */
 function plainCore(question: string): string {
   const withoutCode = question.replace(/```[\s\S]*?```/g, "").replace(/`([^`]+)`/g, "$1");
