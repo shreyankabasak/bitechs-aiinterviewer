@@ -1128,6 +1128,55 @@ export async function getNextQuestion(
   };
 }
 
+/**
+ * Swap the question occupying a slot for a different one from the same
+ * category pool. Used by the "skip / regenerate" control when a question
+ * doesn't apply to the candidate's background. The slot index (and therefore
+ * the "Question X of 7" counter) is unchanged; scoring rules are untouched.
+ */
+export async function regenerateQuestion(
+  role: string,
+  answers: CandidateAnswer[],
+  plan: SessionPlan,
+  currentTurn: InterviewTurn,
+): Promise<{ turn: InterviewTurn; plan: SessionPlan }> {
+  await delay(700 + Math.random() * 500);
+
+  const slot = Math.min(Math.max(currentTurn.index, 1), plan.templates.length) - 1;
+  const category = CATEGORY_ORDER[slot]!;
+  const options =
+    category === "warmup"
+      ? WARMUP_POOL
+      : category === "closing"
+        ? CLOSING_POOL
+        : poolFor(role)[category as CoreCategory];
+
+  const current = plan.templates[slot];
+  const alternatives = options.filter((t) => t.id !== current?.id);
+  const template = alternatives.length > 0 ? pick(alternatives) : (current ?? pick(options));
+
+  const templates = [...plan.templates];
+  templates[slot] = template;
+  const nextPlan: SessionPlan = {
+    ...plan,
+    templates,
+    signature: templates.map((t) => t.id).join("|"),
+  };
+
+  const focus = keywords(answers.at(-1)?.text ?? "", 1)[0];
+
+  return {
+    plan: nextPlan,
+    turn: {
+      id: uid(),
+      index: currentTurn.index,
+      topic: template.topic,
+      question: template.build({ role, focus }),
+      askedAt: Date.now(),
+    },
+  };
+}
+
 /** Strip markdown/code so a question can be restated plainly. */
 function plainCore(question: string): string {
   const withoutCode = question.replace(/```[\s\S]*?```/g, "").replace(/`([^`]+)`/g, "$1");
@@ -1203,6 +1252,12 @@ export async function getFeedback(
   const topicOf = (a?: CandidateAnswer) =>
     a ? (turnOf(a)?.topic ?? "the interview") : "the interview";
 
+  /** Cite the exact answer a feedback point is scored against. */
+  const citeOf = (a?: CandidateAnswer) => {
+    const t = a ? turnOf(a) : undefined;
+    return t ? { source: { index: t.index, topic: t.topic } } : {};
+  };
+
   const perAnswer = scored.map((a) => scoreAnswer(a, turnOf(a)));
   const average = perAnswer.reduce((sum, s) => sum + s, 0) / Math.max(perAnswer.length, 1);
 
@@ -1230,6 +1285,7 @@ export async function getFeedback(
       detail:
         "You framed the problem before jumping to the solution, which made your contribution easy to isolate. That's the part interviewers are actually scoring.",
       quote: quoteFrom(best, "I owned that piece end to end."),
+      ...citeOf(best),
     });
     strengths.push({
       title:
@@ -1241,6 +1297,7 @@ export async function getFeedback(
           ? "You reached for numbers and named systems rather than generalities, which makes your claims checkable and memorable."
           : "You returned to the same area of strength across several answers, which reads as genuine depth rather than surface familiarity.",
       quote: quoteFrom(second, "Here's how I approached it."),
+      ...citeOf(second),
     });
   } else {
     strengthsNote = "Not enough substantive answers this round to identify clear strengths.";
@@ -1255,6 +1312,7 @@ export async function getFeedback(
       title: `No attempt on "${topicOf(a)}"`,
       detail: `You answered "${topicOf(a)}" with just "${snippet}" — that gives an interviewer nothing to evaluate. Even a rough guess with your reasoning attached would score better than no attempt.`,
       quote: snippet || "…",
+      ...citeOf(a),
     });
   }
 
@@ -1264,6 +1322,7 @@ export async function getFeedback(
       detail:
         "At this rate an interviewer can't build a case for you at all. Pick two of these topics before your next screen and prepare one concrete story each — a real situation, what you did, what changed.",
       quote: quoteFrom(nonAnswers.at(-1), "Not sure."),
+      ...citeOf(nonAnswers.at(-1)),
     });
   }
 
@@ -1275,6 +1334,7 @@ export async function getFeedback(
         ? `That answer ran ~${weakest.wordCount} words. Add the outcome and one number — what changed, and by how much — before you stop talking.`
         : "Close each answer with the result: what changed, for whom, and by how much.",
       quote: quoteFrom(weakest, "I'd probably handle it case by case."),
+      ...citeOf(weakest),
     });
   }
 
@@ -1289,6 +1349,7 @@ export async function getFeedback(
           ? `You averaged ${avgWords} words per substantive answer. Lead with the one-sentence answer, then expand only if the interviewer leans in.`
           : "You named the choice you made but rarely the option you rejected. Saying what you didn't do, and why, is what signals seniority.",
       quote: quoteFrom(bySubstance[1] ?? bySubstance[0], "We decided to go with that approach."),
+      ...citeOf(bySubstance[1] ?? bySubstance[0]),
     });
   }
 

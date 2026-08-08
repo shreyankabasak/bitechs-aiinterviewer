@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RoleSelector } from "@/components/RoleSelector";
 import { InterviewChat } from "@/components/InterviewChat";
 import { FeedbackReport } from "@/components/FeedbackReport";
@@ -9,6 +9,7 @@ import {
   getFeedback,
   getNextQuestion,
   getRephrasedQuestion,
+  regenerateQuestion,
   type SessionPlan,
 } from "@/services/mockApi";
 import type {
@@ -39,6 +40,13 @@ export const Route = createFileRoute("/")({
 
 type Stage = "select" | "interview" | "feedback";
 
+/** What the agent was doing when a call failed, so retry can repeat it. */
+type PendingTask =
+  | { kind: "next"; history: CandidateAnswer[] }
+  | { kind: "rephrase"; turn: InterviewTurn; attempt: number }
+  | { kind: "regenerate"; turn: InterviewTurn }
+  | { kind: "feedback" };
+
 function Index() {
   const [stage, setStage] = useState<Stage>("select");
   const [role, setRole] = useState("");
@@ -47,19 +55,87 @@ function Index() {
   const [answers, setAnswers] = useState<CandidateAnswer[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isThinking, setIsThinking] = useState(false);
+  const [thinkingLabel, setThinkingLabel] = useState("Agent is thinking…");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingTask | null>(null);
   const [feedback, setFeedback] = useState<FeedbackSummary | null>(null);
 
   /** How many times the current question slot has been rephrased. */
   const rephrasesForSlot = useRef(0);
 
-  const askNext = useCallback(
+  const fail = (task: PendingTask, message: string) => {
+    setPending(task);
+    setError(message);
+    setIsThinking(false);
+  };
+
+  const runNext = useCallback(
     async (forRole: string, history: CandidateAnswer[], forPlan: SessionPlan) => {
+      setError(null);
+      setThinkingLabel("Agent is writing the next question…");
       setIsThinking(true);
-      const turn = await getNextQuestion(forRole, history, forPlan);
-      rephrasesForSlot.current = 0;
-      setTurns((prev) => [...prev, turn]);
-      setMessages((prev) => [...prev, { kind: "question", turn }]);
+      try {
+        const turn = await getNextQuestion(forRole, history, forPlan);
+        rephrasesForSlot.current = 0;
+        setTurns((prev) => [...prev, turn]);
+        setMessages((prev) => [...prev, { kind: "question", turn }]);
+        setIsThinking(false);
+        setPending(null);
+      } catch {
+        fail({ kind: "next", history }, "The agent couldn't generate the next question.");
+      }
+    },
+    [],
+  );
+
+  const runRephrase = useCallback(async (turn: InterviewTurn, attempt: number) => {
+    setError(null);
+    setThinkingLabel("Agent is rephrasing the question…");
+    setIsThinking(true);
+    try {
+      const next = await getRephrasedQuestion(turn, attempt);
+      setTurns((prev) => [...prev, next]);
+      setMessages((prev) => [...prev, { kind: "question", turn: next }]);
       setIsThinking(false);
+      setPending(null);
+    } catch {
+      fail({ kind: "rephrase", turn, attempt }, "The agent couldn't rephrase that question.");
+    }
+  }, []);
+
+  const runRegenerate = useCallback(
+    async (forRole: string, history: CandidateAnswer[], forPlan: SessionPlan, turn: InterviewTurn) => {
+      setError(null);
+      setThinkingLabel("Agent is picking a different question…");
+      setIsThinking(true);
+      try {
+        const result = await regenerateQuestion(forRole, history, forPlan, turn);
+        setPlan(result.plan);
+        setTurns((prev) => [...prev, result.turn]);
+        setMessages((prev) => [...prev, { kind: "question", turn: result.turn }]);
+        setIsThinking(false);
+        setPending(null);
+      } catch {
+        fail({ kind: "regenerate", turn }, "The agent couldn't swap that question out.");
+      }
+    },
+    [],
+  );
+
+  const runFeedback = useCallback(
+    async (forRole: string, allTurns: InterviewTurn[], allAnswers: CandidateAnswer[]) => {
+      setError(null);
+      setThinkingLabel("Agent is scoring your answers…");
+      setIsThinking(true);
+      try {
+        const report = await getFeedback(forRole, allTurns, allAnswers);
+        setFeedback(report);
+        setIsThinking(false);
+        setPending(null);
+        setStage("feedback");
+      } catch {
+        fail({ kind: "feedback" }, "The agent couldn't score this session.");
+      }
     },
     [],
   );
@@ -72,9 +148,11 @@ function Index() {
     setAnswers([]);
     setMessages([]);
     setFeedback(null);
+    setError(null);
+    setPending(null);
     rephrasesForSlot.current = 0;
     setStage("interview");
-    void askNext(nextRole, [], nextPlan);
+    void runNext(nextRole, [], nextPlan);
   };
 
   const submitAnswer = (text: string) => {
@@ -104,13 +182,7 @@ function Index() {
     if (kind === "clarification") {
       const attempt = rephrasesForSlot.current + 1;
       rephrasesForSlot.current = attempt;
-      setIsThinking(true);
-      void (async () => {
-        const turn = await getRephrasedQuestion(currentTurn, attempt);
-        setTurns((prev) => [...prev, turn]);
-        setMessages((prev) => [...prev, { kind: "question", turn }]);
-        setIsThinking(false);
-      })();
+      void runRephrase(currentTurn, attempt);
       return;
     }
 
@@ -118,27 +190,41 @@ function Index() {
     setAnswers(history);
 
     if (history.length >= TOTAL_QUESTIONS) {
-      setIsThinking(true);
+      void runFeedback(role, turns, history);
       return;
     }
-    void askNext(role, history, plan);
+    void runNext(role, history, plan);
   };
 
-  // Once all 7 scored answers are in, compile the report.
+  const skipQuestion = () => {
+    const currentTurn = turns.at(-1);
+    if (!currentTurn || !plan || isThinking) return;
+    void runRegenerate(role, answers, plan, currentTurn);
+  };
+
+  const retry = () => {
+    if (!pending || !plan) return;
+    if (pending.kind === "next") void runNext(role, pending.history, plan);
+    else if (pending.kind === "rephrase") void runRephrase(pending.turn, pending.attempt);
+    else if (pending.kind === "regenerate") void runRegenerate(role, answers, plan, pending.turn);
+    else void runFeedback(role, turns, answers);
+  };
+
+  // Safety net: if all scored answers are in but no report exists, compile it.
   useEffect(() => {
     if (stage !== "interview" || answers.length < TOTAL_QUESTIONS) return;
-    let cancelled = false;
-    void (async () => {
-      const report = await getFeedback(role, turns, answers);
-      if (cancelled) return;
-      setFeedback(report);
-      setIsThinking(false);
-      setStage("feedback");
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [stage, answers, turns, role]);
+    if (feedback || isThinking || error) return;
+    void runFeedback(role, turns, answers);
+  }, [stage, answers, turns, role, feedback, isThinking, error, runFeedback]);
+
+  /** Counter follows the question actually on screen, never runs ahead of it. */
+  const visibleQuestionNumber = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const m = messages[i]!;
+      if (m.kind === "question") return m.turn.index;
+    }
+    return 1;
+  }, [messages]);
 
   if (stage === "select") return <RoleSelector onStart={start} />;
 
@@ -149,8 +235,13 @@ function Index() {
     <InterviewChat
       role={role}
       messages={messages}
-      questionNumber={Math.max(answers.length + 1, 1)}
+      questionNumber={visibleQuestionNumber}
       isThinking={isThinking}
+      thinkingLabel={thinkingLabel}
+      error={error}
+      onRetry={retry}
+      onSkip={skipQuestion}
+      canSkip={messages.at(-1)?.kind === "question"}
       onSubmitAnswer={submitAnswer}
     />
   );
