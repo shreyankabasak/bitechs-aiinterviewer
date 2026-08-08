@@ -12,7 +12,7 @@ import json
 import sys
 import traceback
 
-MODEL = os.environ.get("LLM_MODEL", "gemini-2.5-flash")
+MODEL = os.environ.get("LLM_MODEL", "gemini-flash-latest")
 _USE_MOCK = not os.environ.get("GEMINI_API_KEY")
 LAST_ERROR = None   # exposed via /health so we can see failures without digging through logs
 
@@ -60,7 +60,7 @@ def _mock_response(user: str) -> str:
     if '"score"' in user:
         return json.dumps({"score": 3, "strategy": "redirect",
                             "next_message": "[MOCK] Let's move to the next topic."})
-    return f"[MOCK REPLY] (no ANTHROPIC_API_KEY set) — would respond to: {user[:80]}..."
+    return f"[MOCK REPLY] (Gemini call failed or GEMINI_API_KEY not set) — would respond to: {user[:80]}..."
 
 
 def phrase_question(system_prompt: str, prompt: str) -> str:
