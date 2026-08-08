@@ -49,6 +49,25 @@ def _tier(mission: dict) -> str:
     return "moderate"
 
 
+def synthesize_candidate_from_role(role: str) -> dict:
+    """
+    The frontend's RoleSelector only sends a role label, not a real
+    candidate.json profile. To stay spec-compliant (the real technical
+    spec expects a full candidate object and >=8 questions across
+    >=4 days), we synthesize a lightweight candidate profile that
+    spans the whole curriculum so build_plan() has real material to
+    work with from any module.
+    """
+    missions = [
+        {"day": d["day"], "title": d["title"], "passed": True, "attempts": 2}
+        for d in _CURRICULUM["days"]
+    ]
+    return {
+        "member": {"name": "Candidate", "jobRole": role, "yearsExperience": 2, "education": "N/A"},
+        "missions": missions,
+    }
+
+
 def build_plan(candidate: dict) -> list[dict]:
     """
     Returns an ordered list of question specs:

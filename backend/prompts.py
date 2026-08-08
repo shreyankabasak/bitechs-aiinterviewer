@@ -64,19 +64,23 @@ def feedback_prompt(candidate: dict, transcript: list[dict]) -> str:
     lines = []
     for t in transcript:
         lines.append(f"- Day {t.get('day')} [{t.get('title')}] (tier: {t.get('tier')}, score: {t.get('score')}): "
-                      f"Q: {t['question']}  A: {t['answer']}")
+                      f"Q: {t['question']}  A: \"{t['answer']}\"")
     transcript_text = "\n".join(lines)
 
     return (
         f"Candidate: {role}. Interview transcript:\n{transcript_text}\n\n"
-        f"Generate final feedback. Each strength and gap MUST reference a "
-        f"specific day/topic from the transcript above as evidence — no "
-        f"generic statements. If scores were broadly consistent with the "
-        f"candidate's original attempt signals (e.g. first-try passes "
-        f"scored well), mention that briefly in the summary.\n"
+        f"Generate final feedback. You must output EXACTLY 2 strengths and "
+        f"EXACTLY 2 gaps. Each one MUST include a short exact quoted snippet "
+        f"(a few words, verbatim, in quotes) pulled from the candidate's own "
+        f"answer text above as evidence — not a paraphrase, not generic. "
+        f"If scores were broadly consistent with the candidate's original "
+        f"attempt signals (e.g. first-try passes scored well), mention that "
+        f"briefly in the summary.\n"
         f"Respond ONLY with JSON: {{\"summary\": \"<2-3 sentences>\", "
-        f"\"strengths\": [\"<point tied to a specific day>\", ...], "
-        f"\"gaps\": [\"<point tied to a specific day, with suggestion>\", ...], "
+        f"\"strengths\": [\"<point including a verbatim quoted snippet>\", "
+        f"\"<point including a verbatim quoted snippet>\"], "
+        f"\"gaps\": [\"<point including a verbatim quoted snippet, with suggestion>\", "
+        f"\"<point including a verbatim quoted snippet, with suggestion>\"], "
         f"\"next\": [\"<actionable review pointer>\", ...]}}"
     )
 

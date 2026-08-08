@@ -13,9 +13,12 @@ class Feedback(BaseModel):
     strengths: List[str]
     gaps: List[str]
     next: List[str]
+    score: Optional[float] = None   # bonus field for the frontend's /10 readiness display
 
 
 class InterviewResponse(BaseModel):
     reply: str
     done: bool
     feedback: Optional[Feedback] = None
+    totalQuestions: Optional[int] = None   # bonus field so frontend can render "Question X of N" accurately
+    questionNumber: Optional[int] = None

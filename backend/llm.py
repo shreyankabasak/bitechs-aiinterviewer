@@ -1,38 +1,41 @@
 """
 LLM wrapper. This is the ONLY file that makes API calls.
 
-Set ANTHROPIC_API_KEY as an environment variable before running.
-If it's not set, every function falls back to a deterministic mock so
-the rest of the app (state machine, contract shape) is testable
-without burning API credits or blocking on a key.
+Uses Google Gemini (free tier available). Set GEMINI_API_KEY as an
+environment variable before running. If it's not set, every function
+falls back to a deterministic mock so the rest of the app (state
+machine, contract shape) is testable without a key.
 """
 
 import os
 import json
 
-MODEL = os.environ.get("LLM_MODEL", "claude-sonnet-4-5")
-_USE_MOCK = not os.environ.get("ANTHROPIC_API_KEY")
+MODEL = os.environ.get("LLM_MODEL", "gemini-2.5-flash")
+_USE_MOCK = not os.environ.get("GEMINI_API_KEY")
 
 if not _USE_MOCK:
-    import anthropic
-    _client = anthropic.Anthropic()
+    import google.generativeai as genai
+    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+    _client = genai.GenerativeModel(MODEL)
 
 
 def _call(system: str, user: str, max_tokens: int = 500) -> str:
     if _USE_MOCK:
         return _mock_response(user)
-    resp = _client.messages.create(
-        model=MODEL,
-        max_tokens=max_tokens,
-        system=system,
-        messages=[{"role": "user", "content": user}],
+    # Gemini doesn't have a separate "system" param on the basic
+    # GenerativeModel call the way Anthropic does — prepend it to the
+    # prompt instead. Works fine in practice for this use case.
+    full_prompt = f"{system}\n\n{user}"
+    resp = _client.generate_content(
+        full_prompt,
+        generation_config={"max_output_tokens": max_tokens},
     )
-    return resp.content[0].text
+    return resp.text
 
 
 def _mock_response(user: str) -> str:
     """Deterministic stand-in so main.py/planner.py are testable with
-    no API key. Swap out once a real key is available — nothing else
+    no API key. Swap out once GEMINI_API_KEY is set — nothing else
     needs to change."""
     if '"summary"' in user:
         return json.dumps({

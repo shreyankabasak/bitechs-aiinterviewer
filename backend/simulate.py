@@ -5,14 +5,14 @@ same functions directly). Confirms the state machine reaches `done`
 correctly and produces a valid feedback shape.
 """
 import json
-from planner import build_plan
+from planner import build_plan, synthesize_candidate_from_role
 import llm
 import prompts
 
 with open("candidates.json") as f:
     candidate = json.load(f)["candidates"][5]  # Wendy Foster: heavy skips, good stress test
 
-print(f"=== Simulating interview for {candidate['member']['name']} ===\n")
+print(f"=== Simulating interview for {candidate['member']['name']} (real profile) ===\n")
 
 plan = build_plan(candidate)
 print(f"Plan: {len(plan)} items across "
