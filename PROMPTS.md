@@ -102,3 +102,33 @@ A more robust interview engine with intelligent response classification, clarifi
 Kept the existing UI, component structure, styling, and context-aware follow-up behavior unchanged. Modified only the interview engine logic to improve response handling, scoring accuracy, feedback quality, and question variety.
 
 ---
+## Day 3 — Sun 9 Aug
+
+### [Tool: Lovable] — (add timestamp)
+
+**Prompt:**
+Fix these issues in the Interview Agent app. Keep the existing scoring logic (non-answer detection, score capping, clarification-request handling) and question randomization from previous fixes completely intact — none of this should touch mockApi.ts's scoring rules, only the items below.
+
+#### CORE FIXES
+
+1. Code snippet blocks (in the "Quick code read" / code reasoning question) are overflowing horizontally on mobile and text is getting cut off. Make code blocks wrap or scroll cleanly within their container, with proper padding, on all screen sizes from 320px up.
+2. The chat message feed is being clipped/overlapped by the fixed bottom input bar. Add sufficient bottom padding/margin to the scrollable message container so the last message is never hidden behind the input, on all screen sizes.
+3. Verify the "Question X of 7" counter updates in sync with the question actually rendered on screen — it should never show a number ahead of the visible question content.
+4. Add a visible progress bar (not just "Question X of 7" text) so users can see how much of the interview remains.
+5. Add graceful error handling: if the AI scoring/response call fails, show a retry option instead of a silent failure or infinite loading state.
+6. Add basic input validation: disable "Submit Answer" until there's meaningful text (e.g. more than a few characters), and show a subtle warning if a user tries to submit empty.
+
+#### HACKATHON POLISH
+
+- Add a visible "regenerate question" or "skip" option in case a question doesn't apply to the user's background.
+- Add a shareable results screen (readiness score + strengths/gaps) with a "copy summary" or "download as image" button, since this will likely be demoed live.
+- Add a subtle loading/typing indicator while the AI is generating the next question, so it doesn't look frozen during the demo.
+- Make sure the final report clearly cites the specific answer text it's scoring against, since that's the app's core differentiator.
+
+**Screenshots provided (issues being fixed):**
+<img width="365" height="346" alt="screenshot-agent" src="https://github.com/user-attachments/assets/d752de72-c342-413d-a6d2-48f83d12a4e0" />
+
+
+**What it produced:** All fixes verified end-to-end at 320px — code blocks now scroll instead of overflowing, the message feed clears the fixed input bar with proper bottom padding, the question counter and progress bar stay in sync with the visible question, and skip/retry plus 10-character input validation are working. The feedback report now cites the exact answer text each point scores against, and a copy-summary / download-as-image sharing option was added to the results screen.
+
+**Kept/modified:** Preserved all existing scoring logic in mockApi.ts (non-answer detection, score capping, clarification-request handling) and question randomization untouched. Modified only the UI/UX layer — chat container styling, progress indicator, input validation, error/retry states, and the results screen — plus added the shareable summary/export feature.
