@@ -1,10 +1,10 @@
 """
 LLM wrapper. This is the ONLY file that makes API calls.
 
-Uses Google Gemini (free tier available). Set GEMINI_API_KEY as an
-environment variable before running. If it's not set, every function
-falls back to a deterministic mock so the rest of the app (state
-machine, contract shape) is testable without a key.
+Uses Google's current Gen AI SDK (google-genai package - the old
+google-generativeai package is deprecated and unreliable). Set
+GEMINI_API_KEY as an environment variable before running. If it's not
+set, every function falls back to a deterministic mock.
 """
 
 import os
@@ -14,21 +14,19 @@ MODEL = os.environ.get("LLM_MODEL", "gemini-2.5-flash")
 _USE_MOCK = not os.environ.get("GEMINI_API_KEY")
 
 if not _USE_MOCK:
-    import google.generativeai as genai
-    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-    _client = genai.GenerativeModel(MODEL)
+    from google import genai
+    from google.genai import types
+    _client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 
 def _call(system: str, user: str, max_tokens: int = 500) -> str:
     if _USE_MOCK:
         return _mock_response(user)
-    # Gemini doesn't have a separate "system" param on the basic
-    # GenerativeModel call the way Anthropic does — prepend it to the
-    # prompt instead. Works fine in practice for this use case.
     full_prompt = f"{system}\n\n{user}"
-    resp = _client.generate_content(
-        full_prompt,
-        generation_config={"max_output_tokens": max_tokens},
+    resp = _client.models.generate_content(
+        model=MODEL,
+        contents=full_prompt,
+        config=types.GenerateContentConfig(max_output_tokens=max_tokens),
     )
     return resp.text
 
