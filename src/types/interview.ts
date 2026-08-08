@@ -42,6 +42,8 @@ export interface FeedbackPoint {
   detail: string;
   /** short quote pulled from the candidate's own answer */
   quote: string;
+  /** the specific answer this point is scored against */
+  source?: { index: number; topic: string };
 }
 
 export interface FeedbackSummary {
