@@ -7,23 +7,14 @@ export type Role =
   | "Sales"
   | (string & {});
 
-/** The six question categories a session is assembled from (core technical appears twice). */
-export type QuestionCategory =
-  "warmup" | "core-a" | "core-b" | "scenario" | "behavioral" | "tradeoff" | "closing";
-
 export interface InterviewTurn {
   id: string;
-  /** 1-based index of the question in the interview */
+  /** 1-based index of the question in the interview, as reported by the backend */
   index: number;
   question: string;
   topic: string;
   askedAt: number;
-  /** true when this turn is a simplified restatement of the previous question */
-  isRephrase?: boolean;
 }
-
-/** How a candidate response was interpreted before scoring. */
-export type ResponseKind = "clarification" | "non-answer" | "real";
 
 export interface CandidateAnswer {
   id: string;
@@ -31,17 +22,17 @@ export interface CandidateAnswer {
   text: string;
   wordCount: number;
   answeredAt: number;
-  kind: ResponseKind;
 }
 
 export type ChatMessage =
-  { kind: "question"; turn: InterviewTurn } | { kind: "answer"; answer: CandidateAnswer };
+  | { kind: "question"; turn: InterviewTurn }
+  | { kind: "answer"; answer: CandidateAnswer };
 
 export interface FeedbackPoint {
   title: string;
-  detail: string;
-  /** short quote pulled from the candidate's own answer */
-  quote: string;
+  detail?: string;
+  /** short quote pulled from the candidate's own answer, when available */
+  quote?: string;
   /** the specific answer this point is scored against */
   source?: { index: number; topic: string };
 }
@@ -55,8 +46,3 @@ export interface FeedbackSummary {
   strengthsNote?: string;
   improvements: FeedbackPoint[];
 }
-
-export const TOTAL_QUESTIONS = 7;
-
-/** How many times the agent will rephrase a single question before forcing an answer. */
-export const MAX_REPHRASES_PER_QUESTION = 2;

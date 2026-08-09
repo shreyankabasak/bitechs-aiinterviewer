@@ -7,22 +7,29 @@ function PointCard({ point, tone }: { point: FeedbackPoint; tone: "good" | "work
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <p className="text-sm font-medium">{point.title}</p>
-      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{point.detail}</p>
-      <p className="mt-3 text-[0.7rem] font-medium uppercase tracking-widest text-muted-foreground">
-        {point.source
-          ? `Scored against your answer to Q${point.source.index} · ${point.source.topic}`
-          : "From your own answer"}
-      </p>
-      <blockquote
-        className={`mt-1.5 break-words border-l-2 pl-3 text-sm italic leading-relaxed text-muted-foreground ${
-          tone === "good" ? "border-accent" : "border-border"
-        }`}
-      >
-        “{point.quote}”
-      </blockquote>
+      {point.detail ? (
+        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{point.detail}</p>
+      ) : null}
+      {point.quote ? (
+        <>
+          <p className="mt-3 text-[0.7rem] font-medium uppercase tracking-widest text-muted-foreground">
+            {point.source
+              ? `Scored against your answer to Q${point.source.index} · ${point.source.topic}`
+              : "From your own answer"}
+          </p>
+          <blockquote
+            className={`mt-1.5 break-words border-l-2 pl-3 text-sm italic leading-relaxed text-muted-foreground ${
+              tone === "good" ? "border-accent" : "border-border"
+            }`}
+          >
+            “{point.quote}”
+          </blockquote>
+        </>
+      ) : null}
     </div>
   );
 }
+
 
 function buildSummaryText(feedback: FeedbackSummary): string {
   const line = (p: FeedbackPoint) =>
