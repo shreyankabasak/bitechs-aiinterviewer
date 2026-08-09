@@ -45,18 +45,20 @@ function toPoints(items: string[] | undefined): FeedbackPoint[] {
 
 function mapFeedback(role: string, fb: ApiFeedback): FeedbackSummary {
   const strengths = toPoints(fb.strengths);
-  return {
+  const summary: FeedbackSummary = {
     role,
     score: typeof fb.score === "number" ? fb.score : 0,
     summary: fb.summary || "Interview complete.",
     strengths,
-    strengthsNote:
-      strengths.length === 0
-        ? "Not enough substantive answers this round to identify clear strengths."
-        : undefined,
     improvements: toPoints(fb.gaps),
   };
+  if (strengths.length === 0) {
+    summary.strengthsNote =
+      "Not enough substantive answers this round to identify clear strengths.";
+  }
+  return summary;
 }
+
 
 function Index() {
   const [stage, setStage] = useState<Stage>("select");
