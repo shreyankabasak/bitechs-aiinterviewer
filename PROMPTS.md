@@ -156,3 +156,60 @@ Live backend wired in: sessions start with {sessionId, candidate:{role}}, turns 
 
 **Kept/modified:**
 Kept all existing UI components and styling from previous fixes untouched. Replaced mockApi.ts's mock question/scoring logic entirely with real calls to the deployed backend (https://bitechs-aiinterviewer.onrender.com). Note: post-integration testing surfaced two open bugs being worked on with the backend developer — (1) a question occasionally renders truncated mid-sentence, and (2) the follow-up "Can you go a bit deeper on that?" can repeat instead of advancing after a substantive answer. Fix in progress on the backend side.**
+
+---------------------------------------------------------------------------------------------------------
+
+**Backend**
+
+Day 3 — Sun 9 Aug
+[Tool: Claude] — Morning
+Prompt: Given these three problem statements, tell me which is easiest and best for winning this hackathon — think of it as you're the pro developer and coder and can create anything from the problem statement I gave and then guide me through each step.
+
+What it produced: Recommendation to choose Problem 2 (Interview Agent) over Problem 1 (Redesign ABTalks — judged mostly on UI/UX polish, not our team's strength) and Problem 3 (Autonomous AI Creator — requires genuine 48-hour unattended uptime, high infra risk on a hackathon timeline). Followed by a full build plan: deterministic question planner weighted by candidate mission attempts/skips, adaptive follow-up strategy, evidence-based feedback.
+
+Kept/modified: Adopted Problem 2 as the final choice.
+
+[Tool: Claude] — Late morning
+Prompt: Let's start the work right now — guide me through step by step for backend first, or tell me what to tell my other two teammates to do. Keep in mind: maximize efficiency in less time.
+
+What it produced: Full FastAPI backend built from scratch — planner.py (deterministic question-plan builder spanning curriculum modules/days, weighted by attempts/skips, tested against all 20 provided candidate profiles), models.py (Pydantic models matching technical-spec.md), llm.py (LLM wrapper with mock fallback), prompts.py (persona + prompt templates), main.py (the POST /api/interview endpoint and session state machine), simulate.py (end-to-end test harness). Verified all 20 candidates produce 8+ questions across 4+ days before writing any endpoint code.
+
+Kept/modified: Used as the initial backend, iterated on in every entry below.
+
+Afternoon
+[Tool: Claude] — Afternoon
+Prompt: For the LLM piece I needed something free to work with, so I used a Gemini key instead — give the rest of the steps accordingly. Also my teammate made a web app on Lovable — here's the prompt she used, take help from this and give me the next steps.
+
+What it produced: llm.py rewritten to call Gemini instead of the original provider. After being shown the frontend's actual handoff spec (fixed request/response shape, exactly-2 strengths/gaps, a score field, quoted-snippet requirement, non-answer/clarification-request handling, and a 7-question assumption that conflicted with the real spec's 8-question minimum), the backend was extended to: accept the frontend's lightweight {role} payload (synthesizing a full spanning candidate profile so the planner still guarantees 8+ questions/4+ days), return totalQuestions/questionNumber so the frontend's counter isn't hardcoded, add a deterministic score-cap rule (3+ non-answers caps readiness at 3/10) computed in code rather than trusted to the model, and force exactly 2 strengths/2 gaps with verbatim quoted snippets in the feedback prompt.
+
+Kept/modified: Backend now accepts either a full candidate.json profile or a role-only payload; feedback shape extended with a bonus score field while keeping the spec's required summary/strengths/gaps/next fields intact.
+
+Prompt: I need the backend live on Render in order to deploy the complete project to be submitted — what should be done finally, tell me the complete correct steps to fully finish and deploy the backend from my side.
+
+What it produced: Full Render deployment walkthrough — pushing the backend into a /backend subfolder of the shared repo, creating the Render web service, setting the root directory/build/start commands, setting the API key as an environment variable, and verifying via /health and a live curl test.
+
+Kept/modified: Backend deployed live at https://bitechs-aiinterviewer.onrender.com.
+
+Evening — debugging the live integration
+[Tool: Claude] — Evening
+Prompt: (Reporting a live 500 error on /api/interview after deployment.)
+
+What it produced: Diagnosed as an uncaught exception — added a global exception handler and wrapped the LLM call in a try/except so any API failure falls back to a mock response instead of crashing the request, and exposed the last real error via GET /health for fast debugging without digging through Render's log viewer.
+
+Prompt: (Reporting the fallback text showing up on real requests.)
+
+What it produced: Root cause found via the new /health error field — Gemini's free tier was hitting its daily quota, and separately its "thinking" models were consuming the output token budget on invisible internal reasoning, causing visible responses to truncate mid-sentence.
+
+Prompt: I don't want to pay a single rupee — give me a free and reliable long-term solution so this doesn't become a weak point when judges evaluate the submission.
+
+What it produced: Backend migrated from Gemini to Groq (llama-3.1-8b-instant) — a genuinely free-forever tier (14,400 requests/day vs. Gemini's 20/day) with no thinking-token overhead. Also rewrote the mock fallback text to read as a normal, presentable interview response instead of visible "[MOCK]"/"[ANTHROPIC_API_KEY]" debug text, so a worst-case API outage during judging would never look broken to a candidate.
+
+Prompt: (Reporting that a follow-up question was repeating verbatim instead of advancing after a substantive answer.)
+
+What it produced: Traced to the transition logic concatenating the model's same-topic follow-up text onto the next question whenever the follow-up cap forced an advance, even when the model's own strategy wasn't actually a "redirect." Fixed by only using that text as a transition when the strategy was genuinely "redirect."
+
+Prompt: Retest with a fresh sessionId end to end — how?
+
+What it produced: A 5-request test sequence (init, weak answer, strong answer, another strong answer, a clarification request) run live against the deployed backend, confirming clean single-question replies, correct question-count advancement, and correct clarification handling with no regressions.
+
+Kept/modified: All fixes deployed and verified live before handoff to the frontend for final integration.
