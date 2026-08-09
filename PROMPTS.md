@@ -135,7 +135,7 @@ Fix these issues in the Interview Agent app. Keep the existing scoring logic (no
 
 
 ---------------
-**## Day 3 — Sun 9 Aug
+## Day 3 — Sun 9 Aug
 
 ### [Tool: Lovable] — 10:00 AM
 
