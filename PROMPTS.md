@@ -2,6 +2,7 @@
 
 This document records the AI-assisted development process used while building "Interview Agent" — an AI-powered mock interview coach — for the ABTalks Vibe Code Hackathon.
 
+## FRONTEND
 ## AI Tools Used
 
 - Lovable
@@ -159,7 +160,7 @@ Kept all existing UI components and styling from previous fixes untouched. Repla
 
 ---------------------------------------------------------------------------------------------------------
 
-**Backend**
+## BACKEND
 
 Day 3 — Sun 9 Aug
 [Tool: Claude] — Morning
