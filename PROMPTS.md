@@ -104,7 +104,7 @@ Kept the existing UI, component structure, styling, and context-aware follow-up 
 ---
 ## Day 2 — Sat 8 Aug
 
-### [Tool: Lovable] — (add timestamp)
+### [Tool: Lovable] — 8 PM
 
 **Prompt:**
 Fix these issues in the Interview Agent app. Keep the existing scoring logic (non-answer detection, score capping, clarification-request handling) and question randomization from previous fixes completely intact — none of this should touch mockApi.ts's scoring rules, only the items below.
