@@ -31,7 +31,16 @@ def _call(system: str, user: str, max_tokens: int = 500) -> str:
         resp = _client.models.generate_content(
             model=MODEL,
             contents=full_prompt,
-            config=types.GenerateContentConfig(max_output_tokens=max_tokens),
+            config=types.GenerateContentConfig(
+                max_output_tokens=max_tokens,
+                # gemini-flash-latest is a "thinking" model - it spends
+                # part of max_output_tokens on invisible internal
+                # reasoning before writing the visible answer. Without
+                # this, short max_tokens budgets get consumed entirely
+                # by thinking, and the actual reply comes back empty
+                # or truncated mid-sentence. Not needed for this task.
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
+            ),
         )
         if not resp.text:
             raise ValueError(f"Empty response from Gemini (finish_reason may indicate why): {resp}")
@@ -64,25 +73,30 @@ def _mock_response(user: str) -> str:
 
 
 def phrase_question(system_prompt: str, prompt: str) -> str:
-    return _call(system_prompt, prompt, max_tokens=300).strip()
+    return _call(system_prompt, prompt, max_tokens=600).strip()
 
 
 def score_and_strategize(system_prompt: str, prompt: str) -> dict:
-    raw = _call(system_prompt, prompt, max_tokens=200)
+    global LAST_ERROR
+    raw = _call(system_prompt, prompt, max_tokens=500)
     try:
-        # strip stray markdown fences if the model adds them
         cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         return json.loads(cleaned)
-    except Exception:
-        return {"score": 3, "strategy": "probe"}  # safe default, never crash the interview
+    except Exception as e:
+        LAST_ERROR = f"score_and_strategize JSON parse failed: {e} | raw={raw[:200]!r}"
+        print(f"[llm.py] {LAST_ERROR}", file=sys.stderr)
+        return {"score": 3, "strategy": "redirect"}  # redirect, not probe - never get stuck on parse failure
 
 
 def generate_feedback(system_prompt: str, prompt: str) -> dict:
-    raw = _call(system_prompt, prompt, max_tokens=800)
+    global LAST_ERROR
+    raw = _call(system_prompt, prompt, max_tokens=1200)
     try:
         cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         return json.loads(cleaned)
-    except Exception:
+    except Exception as e:
+        LAST_ERROR = f"generate_feedback JSON parse failed: {e} | raw={raw[:200]!r}"
+        print(f"[llm.py] {LAST_ERROR}", file=sys.stderr)
         return {
             "summary": "Interview completed.",
             "strengths": [],

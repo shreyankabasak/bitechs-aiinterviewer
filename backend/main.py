@@ -20,7 +20,7 @@ app.add_middleware(
 
 SESSIONS: dict[str, dict] = {}
 
-FOLLOWUP_CAP = 2
+FOLLOWUP_CAP = 1
 
 # Phrases that mark a message as a clarification REQUEST (doesn't
 # advance the question, doesn't count as an answer) vs a genuine but
@@ -190,7 +190,7 @@ def interview(req: InterviewRequest):
 
     if stay_on_topic:
         session["followups_on_current"] += 1
-        session["_pending_question"] = followup_text or "Can you go a bit deeper on that?"
+        session["_pending_question"] = followup_text or f"Can you say more about your approach to {item.get('title', 'that')}?"
         return InterviewResponse(reply=session["_pending_question"], done=False,
                                   totalQuestions=total, questionNumber=session["idx"] + 1)
 
