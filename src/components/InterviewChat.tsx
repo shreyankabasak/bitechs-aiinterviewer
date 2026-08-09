@@ -141,8 +141,10 @@ export function InterviewChat({
     setDraft("");
   };
 
-  const current = Math.min(questionNumber, TOTAL_QUESTIONS);
-  const progress = current / TOTAL_QUESTIONS;
+  const total = totalQuestions && totalQuestions > 0 ? totalQuestions : null;
+  const current = total ? Math.min(questionNumber, total) : questionNumber;
+  const progress = total ? current / total : 0;
+
 
   return (
     <div className="flex min-h-screen flex-col">
