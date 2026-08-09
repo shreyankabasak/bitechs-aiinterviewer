@@ -41,10 +41,11 @@ export function RoleSelector({ onStart }: { onStart: (role: string) => void }) {
         </div>
 
         <p className="mt-8 text-balance text-[1.65rem] font-medium leading-tight tracking-tight sm:text-4xl">
-          Seven questions.
+          A short adaptive interview.
           <br />
           <span className="text-muted-foreground">One honest readout.</span>
         </p>
+
         <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
           A live mock screen that adapts to what you say, then scores your readiness with specific
           strengths and gaps — quoted from your own answers.

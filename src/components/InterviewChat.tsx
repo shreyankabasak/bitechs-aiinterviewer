@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AlertTriangle, CornerDownLeft, RefreshCw, RotateCcw, Sparkle } from "lucide-react";
 import type { ChatMessage } from "@/types/interview";
-import { TOTAL_QUESTIONS } from "@/types/interview";
+
 
 /** Minimum characters before an answer counts as a real attempt. */
 const MIN_ANSWER_CHARS = 10;
