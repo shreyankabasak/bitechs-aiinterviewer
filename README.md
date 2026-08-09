@@ -27,7 +27,7 @@ Along the way, the app also:
 
 **Frontend** — React (TypeScript) + Tailwind CSS + Lucide icons, built and iterated in [Lovable](https://lovable.dev), dark Linear/Vercel-style UI. Hosted at the Lovable-published URL above.
 
-**Backend** — Python (FastAPI), deployed on [Render](https://render.com), powering real question generation and scoring via the Gemini API (`gemini-flash-latest`). The frontend talks to it over a simple REST contract:
+**Backend** — Python (FastAPI), deployed on [Render](https://render.com), powering real question generation and scoring via the Grok API (`grok-beta`). Gemini was the initial choice but was dropped after hitting response length/token-limit errors during testing; Grok Beta replaced it for the live backend. The frontend talks to the backend over a simple REST contract:
 
 - `POST /api/interview` — start a session: `{sessionId, candidate: {role}}` → `{reply, done, totalQuestions, questionNumber}`
 - `POST /api/interview` — continue: `{sessionId, message}` → same shape, or `{done: true, feedback: {summary, strengths[2], gaps[2], score}}` on the final turn
@@ -43,8 +43,8 @@ This project was built through iterative, AI-assisted development across the who
 
 - **[Lovable](https://lovable.dev)** — generated and iterated the entire frontend (React/TypeScript/Tailwind), from the initial build through several rounds of bug fixes, UI polish, and backend integration, prompted throughout the hackathon window.
 - **Claude (Anthropic)** — used for planning the app spec before the first Lovable prompt, writing and refining every subsequent Lovable prompt, debugging deployment and integration issues (GitHub/Vercel/Render setup), and reviewing/fixing bugs found during testing (including the response-scoring logic and a backend follow-up loop).
-- **Gemini (Google)** — powers the live backend: real-time interview question generation and response scoring, called from the FastAPI backend via `gemini-flash-latest`.
-- **ChatGPT** — *(used by the team during backend development — add specifics here, e.g. which parts it helped with)*
+- **Grok (xAI)** — powers the live backend: real-time interview question generation and response scoring, called from the FastAPI backend via `grok-beta`. (Gemini was tried first but was switched out after hitting response length/token-limit errors.)
+- **ChatGPT** — used to independently test and verify the app's scoring behavior across different assigned roles, checking that questions and readiness scores were working correctly for each.
 
 The full prompt-by-prompt log — every prompt sent, what it produced, and what was kept or modified — is in [PROMPTS.md](./PROMPTS.md) at the repo root.
 
@@ -53,7 +53,7 @@ The full prompt-by-prompt log — every prompt sent, what it produced, and what 
 ## Deployment
 
 - **Frontend:** published via Lovable at https://ai-coach-buddy-07.lovable.app, two-way synced to this GitHub repo — every Lovable prompt commits directly to `main`.
-- **Backend:** deployed on Render at `/backend`, with the Gemini API key set as an environment variable (not committed to the repo).
+- **Backend:** deployed on Render at `/backend`, with the Grok API key set as an environment variable (not committed to the repo).
 
 ---
 
