@@ -132,3 +132,27 @@ Fix these issues in the Interview Agent app. Keep the existing scoring logic (no
 **What it produced:** All fixes verified end-to-end at 320px — code blocks now scroll instead of overflowing, the message feed clears the fixed input bar with proper bottom padding, the question counter and progress bar stay in sync with the visible question, and skip/retry plus 10-character input validation are working. The feedback report now cites the exact answer text each point scores against, and a copy-summary / download-as-image sharing option was added to the results screen.
 
 **Kept/modified:** Preserved all existing scoring logic in mockApi.ts (non-answer detection, score capping, clarification-request handling) and question randomization untouched. Modified only the UI/UX layer — chat container styling, progress indicator, input validation, error/retry states, and the results screen — plus added the shareable summary/export feature.
+
+
+---------------
+**## Day 3 — Sun 9 Aug
+
+### [Tool: Lovable] — 10:00 AM
+
+**Prompt:**
+Replace mockApi.ts with real calls to our backend, and remove all hardcoded references to 7 questions.
+
+1. POST to https://bitechs-aiinterviewer.onrender.com/api/interview
+2. To start a session: body {sessionId, candidate: {role}}, response {reply, done, totalQuestions, questionNumber}
+3. To continue: body {sessionId, message}, same response shape
+4. On done:true, response includes feedback {summary, strengths[2], gaps[2], score} — map score to the /10 display, strengths/gaps to the two quoted cards
+5. Use questionNumber and totalQuestions from the response everywhere a question count is shown — the counter and progress bar should read "Question X of {totalQuestions}", not a fixed 7
+6. Change the hero text "Seven questions. One honest readout." to something that doesn't hardcode a number, like "A short adaptive interview. One honest readout."
+7. Keep the loading/typing indicator visible for up to 60 seconds in case the first request is slow (backend cold start), instead of timing out or erroring
+8. Keep all existing UI components and styling untouched — only change the data-fetching logic and the specific text mentioned above
+
+**What it produced:**
+Live backend wired in: sessions start with {sessionId, candidate:{role}}, turns post {sessionId, message}, the counter and progress bar now read the backend's questionNumber/totalQuestions (verified "Question 1 of 9"), final feedback maps to the score and the strength/gap cards, requests wait up to 60s for cold starts, the mock engine is deleted, and the hero now reads "A short adaptive interview. One honest readout." — everything else untouched.
+
+**Kept/modified:**
+Kept all existing UI components and styling from previous fixes untouched. Replaced mockApi.ts's mock question/scoring logic entirely with real calls to the deployed backend (https://bitechs-aiinterviewer.onrender.com). Note: post-integration testing surfaced two open bugs being worked on with the backend developer — (1) a question occasionally renders truncated mid-sentence, and (2) the follow-up "Can you go a bit deeper on that?" can repeat instead of advancing after a substantive answer. Fix in progress on the backend side.**
