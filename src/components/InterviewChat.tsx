@@ -77,6 +77,8 @@ interface Props {
   role: string;
   messages: ChatMessage[];
   questionNumber: number;
+  totalQuestions?: number | null;
+
   isThinking: boolean;
   thinkingLabel?: string;
   error?: string | null;
