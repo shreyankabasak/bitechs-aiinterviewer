@@ -1,122 +1,75 @@
-# Interview Ace
+# Interview Agent
 
-Build a modern, high-performance web app called "Interview Agent" — 
+An AI-powered mock interview coach built for the **ABTalks Vibe Code Hackathon** (Problem Statement 2) by **Team BITECHS**.
 
-an AI-powered mock interview coach.
+A live, adaptive mock interview: pick a role, answer real technical and behavioral questions from an AI interviewer, and get back a scored readiness report with feedback quoted directly from your own answers.
 
-### APP FLOW & SCREENS
+**Live app:** https://ai-coach-buddy-07.lovable.app
+**Full AI-assisted build log:** [PROMPTS.md](./PROMPTS.md)
 
-1. LANDING / ROLE SELECTION SCREEN
+---
 
-   - Logo and title: "Interview Agent — AI Technical Screener"
+## What it does
 
-   - Role Selector: Dropdown with preset roles (Frontend Developer, 
+1. **Role selection** — pick a preset role (Frontend Developer, Backend Developer, Product Manager, Data Analyst, Marketing, Sales) or enter a custom one.
+2. **Adaptive interview** — a multi-question, conversational screen covering warm-up, core technical, problem-solving, behavioral, trade-off, and closing questions, spanning multiple curriculum areas. Follow-up questions reference what you actually said in earlier answers.
+3. **Scored feedback report** — a readiness score out of 10, exactly two strengths and two areas to improve, each backed by a real quoted snippet from your own responses — not generic praise.
 
-     Backend Developer, Product Manager, Data Analyst, Marketing, 
+Along the way, the app also:
+- Detects the difference between a genuine answer, a "not sure" non-answer, and a request for clarification — and responds to each differently instead of scoring them the same
+- Lets you skip a question that doesn't fit your background
+- Shows a live progress bar and typing indicator
+- Offers a shareable summary of your results
 
-     Sales) plus a "Custom Role" option with a text input.
+---
 
-   - Brief tagline explaining what the tool does.
+## Architecture
 
-   - "Start Interview" CTA button.
+**Frontend** — React (TypeScript) + Tailwind CSS + Lucide icons, built and iterated in [Lovable](https://lovable.dev), dark Linear/Vercel-style UI. Hosted at the Lovable-published URL above.
 
-2. INTERVIEW SCREEN
+**Backend** — Python (FastAPI), deployed on [Render](https://render.com), powering real question generation and scoring via the Gemini API (`gemini-flash-latest`). The frontend talks to it over a simple REST contract:
 
-   - Top header: Progress indicator "Question X of 7".
+- `POST /api/interview` — start a session: `{sessionId, candidate: {role}}` → `{reply, done, totalQuestions, questionNumber}`
+- `POST /api/interview` — continue: `{sessionId, message}` → same shape, or `{done: true, feedback: {summary, strengths[2], gaps[2], score}}` on the final turn
+- `GET /health` — liveness check
 
-   - Main chat UI: AI interviewer messages on the left (rendered in 
+Backend repo path: `/backend` in this repository. Note: Render's free tier sleeps after ~15 minutes idle, so the first request after a period of inactivity can take 30–60 seconds to wake up — the frontend's loading indicator accounts for this.
 
-     Markdown, so code snippets format cleanly), candidate responses 
+---
 
-     on the right.
+## AI tools used in building this
 
-   - Input bar: Multi-line text input with a word counter and 
+This project was built through iterative, AI-assisted development across the whole stack:
 
-     "Submit Answer" button. Enter to send, Shift+Enter for newline.
+- **[Lovable](https://lovable.dev)** — generated and iterated the entire frontend (React/TypeScript/Tailwind), from the initial build through several rounds of bug fixes, UI polish, and backend integration, prompted throughout the hackathon window.
+- **Claude (Anthropic)** — used for planning the app spec before the first Lovable prompt, writing and refining every subsequent Lovable prompt, debugging deployment and integration issues (GitHub/Vercel/Render setup), and reviewing/fixing bugs found during testing (including the response-scoring logic and a backend follow-up loop).
+- **Gemini (Google)** — powers the live backend: real-time interview question generation and response scoring, called from the FastAPI backend via `gemini-flash-latest`.
+- **ChatGPT** — *(used by the team during backend development — add specifics here, e.g. which parts it helped with)*
 
-   - Visible "Agent is thinking..." indicator while formulating the 
+The full prompt-by-prompt log — every prompt sent, what it produced, and what was kept or modified — is in [PROMPTS.md](./PROMPTS.md) at the repo root.
 
-     next question.
+---
 
-3. FEEDBACK SCREEN (triggers after 7 exchanges)
+## Deployment
 
-   - Readiness Score card: score out of 10 with a one-line summary.
+- **Frontend:** published via Lovable at https://ai-coach-buddy-07.lovable.app, two-way synced to this GitHub repo — every Lovable prompt commits directly to `main`.
+- **Backend:** deployed on Render at `/backend`, with the Gemini API key set as an environment variable (not committed to the repo).
 
-   - Strengths: exactly 2 concrete strengths, each with a short 
+---
 
-     quoted snippet from the candidate's actual answer.
+## Local development
 
-   - Areas to Improve: exactly 2, each tied to a specific moment in 
-
-     the interview.
-
-   - "Start New Interview" button to reset.
-
-### TECHNICAL & ARCHITECTURE
-
-- Framework: React (TypeScript) with Tailwind CSS and Lucide React 
-
-  icons.
-
-- Component structure:
-
-  - /components/RoleSelector.tsx
-
-  - /components/InterviewChat.tsx
-
-  - /components/FeedbackReport.tsx
-
-  - /services/mockApi.ts — mock engine simulating dynamic question 
-
-    generation and context tracking across 7 questions, so the flow 
-
-    is fully testable before real AI is wired in.
-
-- Data models: TypeScript types for InterviewTurn, CandidateAnswer, 
-
-  and FeedbackSummary.
-
-- Store conversation state in React state — no backend/database yet.
-
-### DESIGN LANGUAGE & UI/UX
-
-- Theme: dark modern SaaS style (Linear/Vercel aesthetic) — deep 
-
-  void background (#09090b), subtle border highlights, sleek 
-
-  typography, muted badges, monochromatic base with one vivid 
-
-  accent color.
-
-- Smooth Tailwind transitions between screens and on message 
-
-  send/receive.
-
-- Fully mobile responsive.
-
-Keep the code clean and readable — I'll be extending it with real AI 
-
-integration and additional features next.
-
-This project was built with [Lovable](https://lovable.dev).
-
-**Live app**: https://ai-coach-buddy-07.lovable.app
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/b9667a23-c9ad-4a15-8ff3-5f71a1c3dcaa).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
+```bash
 git clone <this-repository-url>
 cd <repository-name>
 npm i
 npm run dev
 ```
+
+Requires Node.js and npm ([install with nvm](https://github.com/nvm-sh/nvm)). The backend has its own setup — see `/backend/README.md`.
+
+---
+
+## Team
+
+**BITECHS** — ABTalks Vibe Code Hackathon, Problem Statement 2.
