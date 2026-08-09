@@ -92,6 +92,8 @@ export function InterviewChat({
   role,
   messages,
   questionNumber,
+  totalQuestions,
+
   isThinking,
   thinkingLabel = "Agent is thinking…",
   error,
