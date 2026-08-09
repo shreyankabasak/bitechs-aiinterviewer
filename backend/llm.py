@@ -31,24 +31,13 @@ def _call(system: str, user: str, max_tokens: int = 500) -> str:
         resp = _client.models.generate_content(
             model=MODEL,
             contents=full_prompt,
-            config=types.GenerateContentConfig(
-                max_output_tokens=max_tokens,
-                # gemini-flash-latest is a "thinking" model - it spends
-                # part of max_output_tokens on invisible internal
-                # reasoning before writing the visible answer. Without
-                # this, short max_tokens budgets get consumed entirely
-                # by thinking, and the actual reply comes back empty
-                # or truncated mid-sentence. Not needed for this task.
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            ),
+            config=types.GenerateContentConfig(max_output_tokens=max_tokens),
         )
         if not resp.text:
-            raise ValueError(f"Empty response from Gemini (finish_reason may indicate why): {resp}")
+            raise ValueError(f"Empty response from Gemini (finish_reason: "
+                              f"{getattr(resp.candidates[0], 'finish_reason', 'unknown') if resp.candidates else 'no candidates'})")
         return resp.text
     except Exception as e:
-        # NEVER let a live demo hard-crash because of an API hiccup -
-        # log the real error (visible in Render logs + /health) and
-        # fall back to mock text so the interview keeps running.
         LAST_ERROR = f"{type(e).__name__}: {e}"
         print(f"[llm.py] Gemini call failed, falling back to mock: {LAST_ERROR}", file=sys.stderr)
         traceback.print_exc()
@@ -73,24 +62,24 @@ def _mock_response(user: str) -> str:
 
 
 def phrase_question(system_prompt: str, prompt: str) -> str:
-    return _call(system_prompt, prompt, max_tokens=600).strip()
+    return _call(system_prompt, prompt, max_tokens=1024).strip()
 
 
 def score_and_strategize(system_prompt: str, prompt: str) -> dict:
     global LAST_ERROR
-    raw = _call(system_prompt, prompt, max_tokens=500)
+    raw = _call(system_prompt, prompt, max_tokens=800)
     try:
         cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         return json.loads(cleaned)
     except Exception as e:
         LAST_ERROR = f"score_and_strategize JSON parse failed: {e} | raw={raw[:200]!r}"
         print(f"[llm.py] {LAST_ERROR}", file=sys.stderr)
-        return {"score": 3, "strategy": "redirect"}  # redirect, not probe - never get stuck on parse failure
+        return {"score": 3, "strategy": "redirect"}
 
 
 def generate_feedback(system_prompt: str, prompt: str) -> dict:
     global LAST_ERROR
-    raw = _call(system_prompt, prompt, max_tokens=1200)
+    raw = _call(system_prompt, prompt, max_tokens=2048)
     try:
         cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         return json.loads(cleaned)
