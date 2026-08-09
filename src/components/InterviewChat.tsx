@@ -160,7 +160,7 @@ export function InterviewChat({
             </div>
           </div>
           <span className="shrink-0 rounded-full border border-border bg-secondary px-3 py-1 text-xs text-muted-foreground">
-            Question {current} of {TOTAL_QUESTIONS}
+            {total ? `Question ${current} of ${total}` : `Question ${current}`}
           </span>
         </div>
 
@@ -168,9 +168,9 @@ export function InterviewChat({
           <div
             role="progressbar"
             aria-valuemin={0}
-            aria-valuemax={TOTAL_QUESTIONS}
-            aria-valuenow={current}
-            aria-label={`Question ${current} of ${TOTAL_QUESTIONS}`}
+            {...(total ? { "aria-valuemax": total, "aria-valuenow": current } : {})}
+            aria-label={total ? `Question ${current} of ${total}` : `Question ${current}`}
+
             className="h-1.5 w-full overflow-hidden rounded-full bg-secondary"
           >
             <div
