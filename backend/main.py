@@ -203,7 +203,13 @@ def interview(req: InterviewRequest):
         return InterviewResponse(reply="Interview completed.", done=True, feedback=feedback,
                                   totalQuestions=total, questionNumber=total)
 
-    transition = (followup_text + " ") if followup_text else ""
+    # Only use the model's next_message as a transition when it was
+    # actually generated as a "redirect" (meant to hand off to a new
+    # topic). If we're advancing because the follow-up cap forced it
+    # (strategy was probe/challenge/clarify but we're out of budget),
+    # that text is a same-topic follow-up question, not a transition -
+    # showing it here would paste two unrelated questions together.
+    transition = (followup_text + " ") if (followup_text and strategy == "redirect") else ""
     next_question = _ask_current_question(session)
     return InterviewResponse(reply=f"{transition}{next_question}".strip(), done=False,
                               totalQuestions=total, questionNumber=session["idx"] + 1)
